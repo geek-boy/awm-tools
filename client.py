@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 from urllib2 import urlopen, Request, HTTPError
+import urllib
+import re
 
 from utilities import retry
 
@@ -431,6 +433,64 @@ class CollectionClient(BaseClient):
             fieldname = self._process_fieldname(field)
             details[fieldname] = self._get_field_values(soup, field)
         return details
+
+
+class AWMBioSearchClient(BaseClient):
+
+    FIELDS = ['name', 'service_number', 'unit', 'conflict', 'award']
+
+    def search(self, db, **kwargs):
+        params = urllib.urlencode(kwargs)
+        url = '{}/research/people/{}/?{}'.format(self.AWM_URL, db, params)
+        response = self._get_url(url)
+        soup = BeautifulSoup(response.read())
+        total_results = self._get_total_results(soup)
+        results = self._process_page(soup)
+        return {
+                'total_results': total_results,
+                'results': results
+            }
+
+    def _process_page(self, soup):
+        results = []
+        try:
+            rows = soup.table.tbody.find_all('tr')
+        except AttributeError:
+            pass
+        else:
+            for row in rows:
+                results.append(self._process_row(row))
+        return results
+
+    def _process_row(self, row):
+        cells = row.find_all('td')
+        result = {}
+        result['name'] = cells[0].a.string.strip()
+        result['url'] = self.AWM_URL + cells[0].a['href']
+        for cell, field in enumerate(self.FIELDS):
+            if cell != 0:
+                try:
+                    result[field] = self._get_cell(cells[cell])
+                except IndexError:
+                    pass
+        return result
+
+    def _get_cell(self, cell):
+        try:
+            value = cell.string.strip()
+        except AttributeError:
+            value = None
+        return value
+
+    def _get_total_results(self, soup):
+        try:
+            page_count = soup.find(class_='pg_pagecount').get_text()
+            total_results = re.search(r'Displaying \d+ to \d+ of (\d{1,3}(?:\,\d{3})*)', page_count).group(1)
+        except AttributeError:
+            total_results = 0
+        else:
+            total_results = total_results.replace(',', '')
+        return int(total_results)
 
 
 class UsageError(Exception):
