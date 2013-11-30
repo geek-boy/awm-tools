@@ -192,7 +192,7 @@ class WWIBiogClient(BaseClient):
         try:
             value = soup.find('strong', text=field).next_sibling.string.strip()
         except AttributeError:
-            value = None
+            value = ''
         return value
 
     def _get_field_values(self, soup, field):
@@ -441,9 +441,11 @@ class AWMBioSearchClient(BaseClient):
 
     def search(self, db, **kwargs):
         params = urllib.urlencode(kwargs)
-        url = '{}/research/people/{}/?{}'.format(self.AWM_URL, db, params)
+        url = '{}/research/people/{}/?{}&op=Search'.format(self.AWM_URL, db, params)
+        print url
         response = self._get_url(url)
         soup = BeautifulSoup(response.read())
+        #print soup
         total_results = self._get_total_results(soup)
         results = self._process_page(soup)
         return {
