@@ -190,7 +190,10 @@ class WWIBiogClient(BaseClient):
     def _get_field_value(self, soup, field):
         ''' Get the text value of the requested field. '''
         try:
-            value = soup.find('strong', text=field).next_sibling.string.strip()
+            value = ''
+            for sibling in soup.find('strong', text=field).next_siblings:
+                print sibling.string
+                value += sibling.string
         except AttributeError:
             value = ''
         return value
@@ -245,7 +248,7 @@ class RollClient(WWIBiogClient):
     FIELDS = {
                 'single_value':
                 [
-                    'Service number:',
+                    'Service Number:',
                     'Rank:',
                     'Unit:',
                     'Service:',
@@ -270,7 +273,7 @@ class EmbarkationClient(WWIBiogClient):
     FIELDS = {
                 'single_value':
                 [
-                    'Service number:',
+                    'Service Number:',
                     'Rank:',
                     'Roll title:',
                     'Date of embarkation:',
@@ -292,7 +295,7 @@ class RedCrossClient(WWIBiogClient):
     FIELDS = {
                 'single_value':
                 [
-                    'Service number:',
+                    'Service Number:',
                     'Rank:',
                     'Unit:',
                 ],
@@ -309,7 +312,7 @@ class HonoursClient(WWIBiogClient):
     FIELDS = {
                 'single_value':
                 [
-                    'Service number:',
+                    'Service Number:',
                     'Rank:',
                     'Unit:',
                     'Service:',
@@ -479,7 +482,7 @@ class AWMBioSearchClient(BaseClient):
 
     def _get_cell(self, cell):
         try:
-            value = cell.string.strip()
+            value = cell.get_text(strip=True)
         except AttributeError:
             value = None
         return value
